@@ -1,0 +1,116 @@
+input {
+  tcp {
+    port => {{logstash_localsyslog_port}}
+    type => syslog
+  }
+  udp {
+    port => {{logstash_localsyslog_port}}
+    type => syslog
+  }
+}
+
+filter {
+  if [type] == "syslog" {
+    grok {
+      match => { "message" => "%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
+      add_field => [ "received_at", "%{@timestamp}" ]
+      add_field => [ "received_from", "%{host}" ]
+    }
+    mutate {
+        replace => [ "host", "%{syslog_hostname}" ]
+        remove_field => "sysloghost" # prune the field after successfully replacing "host"
+    }
+    date {
+      match => [ "syslog_timestamp", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+    }
+  } else if [fields][input] == "beat" {
+    mutate {
+        replace => [ "host", "%{[beat][hostname]}" ]
+    }
+    if [fields][type] == "nginx-access" {
+      grok {
+        match => { "message" => ["%{IPORHOST:[nginx_access_remote_ip]} - %{DATA:[nginx_access_user_name]} \[%{HTTPDATE:[nginx_access_time]}\] \"%{WORD:[nginx_access_method]} %{DATA:[nginx_access_url]} HTTP/%{NUMBER:[nginx_access_http_version]}\" %{NUMBER:[nginx_access_response_code]} %{NUMBER:[nginx_access_body_sent][bytes]} \"%{DATA:[nginx_access_referrer]}\" \"%{DATA:[nginx_access_agent]}\""] }
+        overwrite => [ "message" ]
+      }
+      mutate {
+        add_field => { "read_timestamp" => "%{@timestamp}" }
+      }
+      date {
+        match => [ "[nginx_access_time]", "dd/MMM/YYYY:H:m:s Z" ]
+        remove_field => "[nginx_access_time]"
+      }
+    }
+    if [fields][type] == "nginx-error" {
+      grok {
+        match => { "message" => ["%{DATA:[nginx_error_time]} \[%{DATA:[nginx_error_level]}\] %{NUMBER:[nginx_error_pid]}#%{NUMBER:[nginx_error_tid]}: (\*%{NUMBER:[nginx_error_connection_id]} )?%{GREEDYDATA:[nginx_error_message]}"] }
+        overwrite => [ "message" ]
+      }
+      mutate {
+        rename => { "@timestamp" => "read_timestamp" }
+      }
+      date {
+        match => [ "[nginx_error_time]", "YYYY/MM/dd H:m:s" ]
+        remove_field => "[nginx_error_time]"
+      }
+    }
+    if [fields][type] == "symfony" {
+      grok {
+        match => { "message" => "%{SYMFONY}"}
+      }
+    }
+  }
+
+  ruby {
+    init => "
+        def remove_dots hash
+            new = Hash.new
+            hash.each { |k,v|
+                if v.is_a? Hash
+                    v = remove_dots(v)
+                end
+                new[ k.gsub('.','_') ] = v
+                if v.is_a? Array
+                    v.each { |elem|
+                        if elem.is_a? Hash
+                            elem = remove_dots(elem)
+                        end
+                        new[ k.gsub('.','_') ] = elem
+                    } unless v.nil?
+                end
+            } unless hash.nil?
+            return new
+        end
+    "
+    code => "
+        event.instance_variable_set(:@data,remove_dots(event.to_hash))
+    "
+  }
+}
+
+{% if logstash_output_gelf_host is defined and logstash_output_gelf_port is defined %}
+output {
+    gelf {
+        host => "{{ logstash_output_gelf_host }}"
+        port => {{ logstash_output_gelf_port }}
+    }
+}
+{% endif %}
+
+{% if logstash_output_es and logstash_es_port is defined %}
+output {
+    elasticsearch {
+        hosts => ["localhost:{{logstash_es_port}}"]
+    }
+}
+{% endif %}
+
+input {
+  beats {
+    port => {{logstash_syslog_port}}
+    ssl => true
+    ssl_certificate => ["/etc/beat/beat-forwarder.crt"]
+    ssl_key => ["/etc/beat/beat-forwarder.key"]
+    ssl_verify_mode => none
+    add_field => { "filename" => "%{source}" }
+  }
+}

@@ -1,0 +1,66 @@
+- name: Add Elasticsearch APT key
+  apt_key:
+    url: 'http://packages.elasticsearch.org/GPG-KEY-elasticsearch'
+    id: '{{ logstash_key_id }}'
+    state: present
+
+- name: Add Logstash repository
+  apt_repository:
+    repo: "deb http://packages.elastic.co/logstash/{{ logstash_version }}/debian stable main"
+    state: present
+    update_cache: True
+
+- name: Install logstash
+  apt:
+    package: logstash
+    state: present
+  register: logstash_installed
+
+- name: Install logstash defaults
+  template:
+    src: logstash.default
+    dest: /etc/default/logstash
+    owner: root
+    group: root
+    mode: 0644
+    backup: true
+  notify: Restart logstash
+
+- name: Creates ELK Cert Directory
+  file:
+    path: /etc/beat
+    state: directory
+    mode: 0755
+
+- name: Install beat forwarder cert
+  copy:
+    src: "{{ elk_beat_forwarder_cert }}"
+    dest: "/etc/beat/beat-forwarder.crt"
+
+- name: Install forwarder key
+  copy:
+    src: "{{ elk_beat_forwarder_key }}"
+    dest: "/etc/beat/beat-forwarder.key"
+
+- name: Prepare directory for patterns
+  file:
+    path: "/opt/logstash/patterns"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Install symfony pattern
+  copy:
+    src: "symfony-pattern.conf"
+    dest: "/opt/logstash/patterns/symfony.conf"
+  notify: Restart logstash
+
+- name: Copy logstash filter configuration
+  template:
+    src: logstash.conf.j2
+    dest: /etc/logstash/conf.d/logstash.conf
+    owner: logstash
+    group: logstash
+    mode: 0644
+  notify: Restart logstash

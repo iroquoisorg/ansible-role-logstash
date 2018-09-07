@@ -1,0 +1,8 @@
+logstash_version: "2.3"
+logstash_syslog_port: 5044
+logstash_localsyslog_port: 5000
+logstash_es_port: 9200
+logstash_key_id: 'D88E42B4'
+logstash_heap_size: '1g'
+logstash_output_gelf_port: 12201
+logstash_output_es: false
