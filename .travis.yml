@@ -17,7 +17,7 @@ install:
   - "{ echo '[defaults]'; echo 'roles_path = ../'; } >> ansible.cfg"
 
   # generate SSL keys
-  - openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/elk.key -out /etc/ssl/elk.crt -subj "/C=US/ST=New York/L=New York/O=Test Organization/OU=Unit/CN=elk.example.com/emailAddress=sysadmin@example.com"
+  - sudo openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/elk.key -out /etc/ssl/elk.crt -subj "/C=US/ST=New York/L=New York/O=Test Organization/OU=Unit/CN=elk.example.com/emailAddress=sysadmin@example.com"
 
 script:
   # Check the role/playbook's syntax.
