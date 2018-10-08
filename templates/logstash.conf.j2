@@ -112,5 +112,6 @@ input {
     ssl_key => ["/etc/beat/beat-forwarder.key"]
     ssl_verify_mode => none
     add_field => { "filename" => "%{source}" }
+    congestion_threshold => {{ logstash_congestion_threshold }}
   }
 }
