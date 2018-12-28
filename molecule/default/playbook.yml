@@ -1,0 +1,15 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  pre_tasks:
+    - name: Generate SSL keys
+      become: true
+      become_user: root
+      command: 'openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/beat-forwarder.key -out /etc/ssl/beat-forwarder.crt -subj "/C=US/ST=New York/L=New York/O=Test Organization/OU=Unit/CN=elk.example.com/emailAddress=sysadmin@example.com"'
+      args:
+        creates: '/etc/ssl/beat-forwarder.key'
+      tags:
+        - skip_ansible_lint
+  roles:
+    - role: ansible-role-logstash

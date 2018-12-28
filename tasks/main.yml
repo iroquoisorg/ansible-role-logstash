@@ -1,3 +1,4 @@
+---
 - name: Add Elasticsearch APT key
   apt_key:
     url: 'http://packages.elasticsearch.org/GPG-KEY-elasticsearch'
@@ -8,7 +9,7 @@
   apt_repository:
     repo: "deb http://packages.elastic.co/logstash/{{ logstash_version }}/debian stable main"
     state: present
-    update_cache: True
+    update_cache: true
 
 - name: Install logstash
   apt:
@@ -36,11 +37,13 @@
   copy:
     src: "{{ elk_beat_forwarder_cert }}"
     dest: "/etc/beat/beat-forwarder.crt"
+  when: elk_beat_forwarder_cert is defined
 
 - name: Install forwarder key
   copy:
     src: "{{ elk_beat_forwarder_key }}"
     dest: "/etc/beat/beat-forwarder.key"
+  when: elk_beat_forwarder_key is defined
 
 - name: Prepare directory for patterns
   file:

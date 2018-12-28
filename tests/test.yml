@@ -1,8 +1,0 @@
----
-- hosts: localhost
-  remote_user: root
-  vars:
-    elk_beat_forwarder_cert: /etc/ssl/elk.crt
-    elk_beat_forwarder_key: /etc/ssl/elk.key
-  roles:
-    - ansible-role-logstash

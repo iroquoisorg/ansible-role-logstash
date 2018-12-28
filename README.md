@@ -1,6 +1,6 @@
 # logstash
 
-[![Build Status](https://travis-ci.com/iroquoisorg/ansible-role-logstash.svg?branch=master)](https://travis-ci.com/iroquoisorg/ansible-role-memcached)
+[![Build Status](https://travis-ci.com/iroquoisorg/ansible-role-logstash.svg?branch=master)](https://travis-ci.com/iroquoisorg/ansible-role-logstash)
 
 Ansible role for logstash
 
@@ -22,5 +22,8 @@ logstash_heap_size: '1g'
 logstash_output_gelf_port: 12201
 logstash_output_es: false
 logstash_congestion_threshold: 5
-
 ```
+
+# Development
+
+Please check [development guide](DEVELOPMENT.md) for details about developing and testing this role.
